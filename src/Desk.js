@@ -1,28 +1,57 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 
-const API_URL = "https://deckofcardsapi.com/api/deck/new/shuffle/";
+const API_BASE = "https://deckofcardsapi.com/api/deck";
 
 class Desk extends Component {
     constructor(props){
         super(props);
         this.state = {
-            deck: null
+            deck: null,
+            drawn: [],
         }
+        this.getCard = this.getCard.bind(this);
     }
 
     async componentDidMount() {
-        let deck = await axios.get(API_URL);
+        let deck = await axios.get(`${API_BASE}/new/shuffle/`);
         this.setState({
             deck: deck.data
         });        
     }
 
+    async getCard(){
+        let id = this.state.deck.deck_id;
+
+        try {
+            let cardUrl = `${API_BASE}/${id}/draw/`;
+            let cardRes = await axios.get(cardUrl);
+
+            if(!cardRes.data.success) {
+                throw new Error('No cards remaining');
+            }
+
+            let card = cardRes.data.cards[0];
+            this.setState(st => ({
+                drawn: [
+                    ...st.drawn,
+                    {
+                        id: card.code,
+                        image: card.image,
+                        name: `${card.value} of ${card.suit}`
+                    }
+                ]
+            }))
+        } catch (error) {
+            alert(error);   
+        }
+    }
 
     render() { 
         return ( 
             <div>
                 <h1>Card Dealer</h1>
+                <button onClick={this.getCard}>Get Card!</button>
             </div>
          );
     }
